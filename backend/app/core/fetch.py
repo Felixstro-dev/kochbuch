@@ -407,6 +407,8 @@ class FetchPipeline:
     ) -> FetchResult:
         domain = urlsplit(url).netloc.lower()
         state = self._domains.setdefault(domain, _DomainState(domain=domain))
+        state.last_request_at = time.time()
+        self._totals["requests"] += 1
         use_proxy = self.config.proxy_url is not None if allow_proxy is None else allow_proxy
         use_proxy = bool(use_proxy and self.config.proxy_url)
         if kind == "image":

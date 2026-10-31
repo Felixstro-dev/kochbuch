@@ -59,3 +59,25 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # GHCR-Pakete sind standardmäßig privat. Öffentlich machen, damit
+      # Dokploy / eine Raspberry Pi das Image ohne Login pullen kann.
+      - name: Make package public
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          pkg="${GITHUB_REPOSITORY##*/}"
+          echo "Setze Sichtbarkeit von container/${pkg} auf public ..."
+          curl -fsS -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/user/packages/container/${pkg}" \
+            -d '{"visibility":"public"}'
+          echo
+          curl -fsS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/user/packages/container/${pkg}" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print('visibility =', d['visibility'])"
