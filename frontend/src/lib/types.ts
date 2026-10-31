@@ -184,3 +184,14 @@ export interface ApiKey {
 export interface ApiKeyCreated extends ApiKey {
   secret: string;
 }
+
+export interface Wish {
+  id: string;
+  text: string;
+  note: string;
+  status: 'open' | 'done' | string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  done_at: string | null;
+}

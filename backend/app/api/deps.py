@@ -184,3 +184,19 @@ def require_session(principal: Principal = Depends(get_principal)) -> Principal:
             detail="Diese Aktion erfordert eine Anmeldung in der Oberfläche.",
         )
     return principal
+
+
+def require_contributor(
+    request: Request,
+    principal: Principal = Depends(get_principal),
+) -> Principal:
+    """Schreibzugriff für Wünsche: angemeldete Nutzer (mit CSRF) oder – wenn
+    das Backend öffentlich erreichbar ist – anonyme Besucher aus dem iframe."""
+    if principal.auth_type in {"session", "api_key"} and "write" not in principal.scopes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Dieser Zugang ist nur lesend.",
+        )
+    if principal.auth_type in {"session", "api_key"}:
+        _verify_csrf(request, principal)
+    return principal

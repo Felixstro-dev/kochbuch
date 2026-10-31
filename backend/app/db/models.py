@@ -147,6 +147,23 @@ class Recipe(Base):
     )
 
 
+class Wish(Base):
+    """Ein freier Küchenwunsch ohne Rezept, z. B. „Zwetschgenknödel"."""
+
+    __tablename__ = "wishes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    text: Mapped[str] = mapped_column(String(300), index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    created_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    done_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class SearchCache(Base):
     __tablename__ = "search_cache"
 

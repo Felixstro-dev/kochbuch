@@ -3,13 +3,13 @@
   import { page } from '$app/state';
   import { goto, invalidateAll } from '$app/navigation';
   import {
-    CalendarDays,
     ChefHat,
     Heart,
     LogOut,
     Menu,
     Search,
     Settings,
+    Sparkles,
     X
   } from 'lucide-svelte';
   import { onMount } from 'svelte';
@@ -31,7 +31,7 @@
   const nav = [
     { href: '/', label: 'Suche', icon: Search },
     { href: '/favorites', label: 'Favoriten', icon: Heart },
-    { href: '/plan', label: 'Plan', icon: CalendarDays },
+    { href: '/wishes', label: 'Wünsche', icon: Sparkles },
     { href: '/settings', label: 'Einstellungen', icon: Settings }
   ];
 
