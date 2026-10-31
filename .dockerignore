@@ -1,0 +1,11 @@
+.git
+.github
+ha-card
+**/.venv
+**/node_modules
+**/build
+**/.svelte-kit
+backend/data
+backend/*.db
+backend/.env
+*.log
