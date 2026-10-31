@@ -4,17 +4,19 @@ services:
     container_name: kochbuch
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${WEB_PORT:-8080}:8080"
     environment:
       # WICHTIG: eigenen Wert erzeugen, z. B.
       #   openssl rand -hex 32
+      # Alle Werte sind über die .env / Dokploy-Environment überschreibbar,
+      # die Angaben nach den `:-` sind nur die Defaults.
       SECRET_KEY: "${SECRET_KEY:-change-me-please}"
-      EMBED_PUBLIC: "true"
-      CORS_ORIGINS: "*"
+      EMBED_PUBLIC: "${EMBED_PUBLIC:-true}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-*}"
       # Home Assistant darf die Seite als iframe einbetten
-      FRAME_ANCESTORS: "'self' http://homeassistant.local:8123 http://192.168.3.146:8123 https://*.duckdns.org"
-      TZ: "Europe/Berlin"
-      AUTO_MIGRATE: "true"
+      FRAME_ANCESTORS: "${FRAME_ANCESTORS:-'self' http://homeassistant.local:8123 http://192.168.3.146:8123 https://*.duckdns.org}"
+      TZ: "${TZ:-Europe/Berlin}"
+      AUTO_MIGRATE: "${AUTO_MIGRATE:-true}"
     volumes:
       # SQLite-Datenbank + Rezeptbilder
       - kochbuch-data:/app/data

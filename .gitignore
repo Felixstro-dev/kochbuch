@@ -30,3 +30,7 @@ ha-card/
 *.png
 !docs/**/*.png
 .DS_Store
+
+# Lokale Umgebungsdateien (niemals committen)
+.env
+**/.env
