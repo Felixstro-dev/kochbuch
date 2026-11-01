@@ -19,6 +19,7 @@ export function showToast(message: string, kind: ToastKind = 'info', duration = 
       toasts.update((list) => list.filter((t) => t.id !== id));
     }, duration);
   }
+  // Persistent: duration <= 0 -> bleibt bis Klick auf X (ToastContainer hat schon Button)
   return id;
 }
 

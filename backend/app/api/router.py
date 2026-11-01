@@ -14,6 +14,7 @@ from app.api.routes import (
     system,
     users,
     wishes,
+    export,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -28,3 +29,4 @@ api_router.include_router(audit.router)
 api_router.include_router(recipes.router)
 api_router.include_router(wishes.router)
 api_router.include_router(bring.router)
+api_router.include_router(export.router)
