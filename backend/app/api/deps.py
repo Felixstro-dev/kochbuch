@@ -130,10 +130,21 @@ def get_optional_principal(
 
 def get_principal(
     principal: Principal | None = Depends(get_optional_principal),
+    request: Request | None = None,
 ) -> Principal:
-    if principal is None:
-        raise _unauthorized()
-    return principal
+    if principal is not None:
+        return principal
+    # Wenn embed_public erlaubt und kein authentifizierter Nutzer da,
+    # stehe als "public"-Principal zur Verfügung (lesereich).
+    if request is not None:
+        from app.core.config import Settings
+        from fastapi import Request as FastAPIRequest
+        # Settings are available via request.app.state.settings
+        settings: Settings = request.app.state.settings
+        if getattr(settings, "embed_public", False):
+            from app.api.deps import Principal
+            return Principal(auth_type="public", scopes={"read"})
+    raise _unauthorized()
 
 
 def _verify_csrf(request: Request, principal: Principal) -> None:

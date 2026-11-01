@@ -187,7 +187,7 @@ import { showToast } from '#lib/toast.svelte';
     }
   }
   async function checkForUpdates() {
-    if (checkingUpdate || !isAdmin) return;
+    if (checkingUpdate) return;
     checkingUpdate = true;
     updateMessage = '';
     try {
@@ -488,7 +488,7 @@ import { showToast } from '#lib/toast.svelte';
         </div>
       </header>
       <div class="fields">
-        <button class="btn btn-ghost" type="button" onclick={checkForUpdates} disabled={!isAdmin || checkingUpdate}>
+        <button class="btn btn-ghost" type="button" onclick={checkForUpdates} disabled={checkingUpdate}>
           {#if checkingUpdate}<LoaderCircle class="spin" size={15} />{:else}<RefreshCw size={15} />{/if}
           Auf Updates prüfen
         </button>

@@ -1,5 +1,6 @@
 const BASE = '/api/v1';
 
+import { showToast } from '#lib/toast.svelte';
 export class ApiError extends Error {
   status: number;
 
@@ -65,6 +66,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
         : typeof body === 'string' && body
           ? body
           : `Anfrage fehlgeschlagen (${response.status}).`;
+    showToast(detail, 'error');
     throw new ApiError(response.status, detail);
   }
   return body as T;
