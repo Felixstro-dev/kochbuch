@@ -1124,6 +1124,21 @@ import { translateShoppingError, SHOPPING_UNREACHABLE, SHOPPING_EMPTY, SHOPPING_
     margin: 0 auto;
     padding: 1rem 1.1rem 1.2rem;
     animation: slide-up 200ms ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .bottom-sheet-panel .sheet-head {
+    flex: none;
+  }
+  .bottom-sheet-panel .modal-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    max-height: none;
+  }
+  .bottom-sheet-panel .modal-actions {
+    flex: none;
+    margin-top: auto;
   }
   @keyframes slide-up {
     from { transform: translateY(100%); opacity: 0.6; }
