@@ -17,10 +17,13 @@ router = APIRouter(prefix="/system", tags=["system"])
 def _checker(request: Request):
     checker = getattr(request.app.state, "update_checker", None)
     if checker is None:
-        # Testing/Deaktiviert: Endpunkt antwortet trotzdem mit „aus".
         from app.services.update_check import UpdateChecker
-
-        checker = UpdateChecker(image="", git_sha="unknown", interval_seconds=3600)
+        settings = request.app.state.settings
+        checker = UpdateChecker(
+            image=settings.update_image,
+            git_sha=settings.git_sha or "unknown",
+            interval_seconds=settings.update_check_interval,
+        )
     return checker
 
 
