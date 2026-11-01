@@ -17,6 +17,7 @@ dependencies = [
   "pillow>=13.0.0",
   "blurhash>=1.1.5",
   "beautifulsoup4>=4.15.0",
+  "bring-api>=1.1,<2",
 ]
 
 [dependency-groups]
