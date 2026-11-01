@@ -27,7 +27,7 @@ def _get_owned_key(db: Session, key_id: str, principal: Principal) -> ApiKey:
     return key
 
 
-@router.get("", response_model=list[ApiKeyOut])
+@router.get("")
 def list_keys(
     all_users: bool = Query(default=False),
     principal: Principal = Depends(get_principal),
