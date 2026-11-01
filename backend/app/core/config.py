@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # Proxy / integrations
     cors_origins: str = ""
     frame_ancestors: str = "'self'"
-    embed_public: bool = False
+    embed_public: bool = True
 
     # Providers / caching
     enabled_providers: str = "chefkoch,web,local"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.api.deps import Principal, require_admin
+from app.api.deps import Principal, get_principal, require_admin
 from app.schemas.settings import (
     FetchActiveOut,
     FetchDomainOut,
@@ -45,7 +45,7 @@ async def trigger_update_check(
 @router.get("/fetch-status", response_model=FetchStatusOut)
 def fetch_status(
     request: Request,
-    _: Principal = Depends(require_admin),
+    _: Principal = Depends(get_principal),
 ) -> FetchStatusOut:
     data = request.app.state.fetch_pipeline.status()
     config = data["config"]

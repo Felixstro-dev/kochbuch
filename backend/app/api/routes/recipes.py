@@ -13,7 +13,7 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from app.api.deps import Principal, get_principal, require_write
+from app.api.deps import Principal, get_principal, require_contributor, require_write
 from app.api.serializers import detail_out, summary_out
 from app.db.session import get_db
 from app.providers.base import RecipeNotFound, SearchQuery
@@ -162,7 +162,7 @@ async def resolve_recipe(
     payload: ResolveRequest,
     request: Request,
     background: BackgroundTasks,
-    _: Principal = Depends(require_write),
+    _: Principal = Depends(require_contributor),
     db: Session = Depends(get_db),
 ) -> RecipeDetailOut:
     _, recipes, images = _services(request)
@@ -221,7 +221,7 @@ def update_recipe(
     payload: RecipePatch,
     request: Request,
     background: BackgroundTasks,
-    _: Principal = Depends(require_write),
+    _: Principal = Depends(require_contributor),
     db: Session = Depends(get_db),
 ) -> RecipeDetailOut:
     _, recipes, images = _services(request)
