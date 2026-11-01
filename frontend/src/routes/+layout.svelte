@@ -13,6 +13,7 @@
     X
   } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import { showToast } from '#lib/toast.svelte';
   import type { Snippet } from 'svelte';
   import { api } from '#lib/api';
   import { applyTheme, initTheme } from '#lib/theme';
@@ -61,9 +62,15 @@
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('message', onMessage);
+    window.addEventListener('error', (e) => {
+      showToast(e.message || 'Ein interner Fehler ist aufgetreten.', 'error');
+    });
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('message', onMessage);
+      window.removeEventListener('error', (e) => {
+        showToast(e.message || 'Ein interner Fehler ist aufgetreten.', 'error');
+      });
     };
   });
 
