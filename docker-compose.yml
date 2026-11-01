@@ -1,6 +1,11 @@
 services:
   kochbuch:
-    image: ghcr.io/felixstro-dev/kochbuch:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+    image: kochbuch:latest
     container_name: kochbuch
     restart: unless-stopped
     ports:
