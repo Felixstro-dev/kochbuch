@@ -196,7 +196,7 @@ import { showToast } from '#lib/toast.svelte';
         ? 'Update verfügbar – im Dokploy bereitstellen.'
         : 'Kein Update verfügbar. Du bist auf dem neuesten Stand.';
       updateMessage = msg;
-      showToast(msg, result?.available ? 'success' : 'info', 0); // persistent bis Klick auf X
+      showToast(msg, result?.available ? 'warning' : 'info', 0); // persistent bis Klick auf X
     } catch (cause) {
       const errMsg = cause instanceof ApiError ? cause.message : 'Update-Prüfung fehlgeschlagen.';
       updateMessage = errMsg;
