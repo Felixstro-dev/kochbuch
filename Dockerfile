@@ -2,7 +2,10 @@
 # Multi-Arch-Build: linux/amd64 + linux/arm64 (Raspberry Pi)
 
 # --- 1) Frontend bauen (SvelteKit -> statisch) ---
-FROM node:24-alpine AS frontend
+# Auf der Build-Plattform: Das Ergebnis sind plattformunabhängige statische
+# Dateien. Unter QEMU (arm64-Emulation) crashte Vite regelmäßig mit
+# "qemu: uncaught target signal 4 (Illegal instruction)".
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
 WORKDIR /src
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 RUN cd frontend && npm ci --no-audit --no-fund

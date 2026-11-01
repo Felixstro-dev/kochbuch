@@ -15,6 +15,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Schutz vor Hängern (z. B. QEMU-Crash): sonst läuft der Job bis zum
+    # 6-Stunden-GitHub-Limit, ohne dass jemand es bemerkt.
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
