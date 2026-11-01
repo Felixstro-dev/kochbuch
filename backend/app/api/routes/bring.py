@@ -33,7 +33,11 @@ async def add_to_shopping_list(
     except HTTPException:
         raise
     except Exception as exc:
+        # Keine technischen Details ins UI – zentraler Fallback
+        detail = str(exc)
+        if len(detail) > 120:
+            detail = "Unerwarteter Fehler beim Speichern. Bitte später erneut versuchen."
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
+            detail=detail,
         ) from exc

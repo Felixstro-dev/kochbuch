@@ -3,6 +3,7 @@
   import {
     ArrowLeft,
     Check,
+    ListPlus,
     LoaderCircle,
     ChefHat,
     Clock,
@@ -16,12 +17,14 @@
     Printer,
     Share2,
     ShoppingCart,
+    Undo2,
     Users,
     X,
     Utensils
   } from 'lucide-svelte';
   import { api } from '#lib/api';
 import { showToast } from '#lib/toast.svelte';
+import { translateShoppingError, SHOPPING_UNREACHABLE, SHOPPING_EMPTY, SHOPPING_BAD_DATA, SHOPPING_PARTIAL } from '#lib/error-utils';
   import {
     amountFactor,
     difficultyLabel,
@@ -48,6 +51,10 @@ import { showToast } from '#lib/toast.svelte';
   let showShopping = $state(false);
   let addingShopping = $state(false);
   let shoppingError = $state('');
+  let shoppingSuccess = $state('');
+  let shoppingUndo = $state(false);
+  let selectedIngredients = $state<Set<string>>(new Set());
+  let deselectedHistory = $state<Record<string, number>>({});
   let heroPopping = $state(false);
 
   const baseServings = $derived(recipe.base_servings ?? 4);
@@ -164,34 +171,94 @@ import { showToast } from '#lib/toast.svelte';
     window.print();
   }
 
-    async function addToShoppingList() {
+  // Beim Öffnen des Sheets: alle Zutaten standardmäßig wählen
+  $effect(() => {
+    if (showShopping) {
+      selectedIngredients = new Set(allIngredients.map((i) => i.key));
+      shoppingError = '';
+      shoppingSuccess = '';
+      shoppingUndo = false;
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const raw = localStorage.getItem(`kochbuch-deselected:${recipe.cache_key}`);
+          deselectedHistory = raw ? JSON.parse(raw) : {};
+        } catch {
+          deselectedHistory = {};
+        }
+      }
+    }
+  });
+
+  function toggleIngredientSelection(key: string) {
+    const next = new Set(selectedIngredients);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    selectedIngredients = next;
+  }
+
+  function toggleAllSelection() {
+    const allSelected = allIngredients.every((i) => selectedIngredients.has(i.key));
+    selectedIngredients = allSelected ? new Set() : new Set(allIngredients.map((i) => i.key));
+  }
+
+  function selectedCount() {
+    return selectedIngredients.size;
+  }
+
+  async function confirmAddToShoppingList() {
     if (addingShopping) return;
+    if (selectedIngredients.size === 0) {
+      shoppingError = SHOPPING_EMPTY;
+      return;
+    }
+    if (allIngredients.length === 0) {
+      shoppingError = SHOPPING_BAD_DATA;
+      return;
+    }
+    // Speichere häufig abgewählte Zutaten als Vorschlag
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const deselected = allIngredients.filter((i) => !selectedIngredients.has(i.key));
+        const updated: Record<string, number> = { ...deselectedHistory };
+        deselected.forEach((i) => {
+          updated[i.key] = (updated[i.key] || 0) + 1;
+        });
+        localStorage.setItem(`kochbuch-deselected:${recipe.cache_key}`, JSON.stringify(updated));
+      } catch {
+        // Ignoriere Speicherschreibfehler (z. B. privater Modus)
+      }
+    }
     addingShopping = true;
     shoppingError = '';
+    shoppingSuccess = '';
     try {
-      const lines = allIngredients.map((item) => {
+      const selectedItems = allIngredients.filter((item) => selectedIngredients.has(item.key));
+      const lines = selectedItems.map((item) => {
         const amount = formatAmount(item.amount, factor);
         const unit = item.unit ? ` ${item.unit}` : '';
         return `${amount}${unit} ${item.name}`.trim();
       });
-      const newLine = String.fromCharCode(10); const text = recipe.title + newLine + lines.join(newLine);
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch (copyErr) {
-        shoppingError = 'Zwischenablage blocked – Bring manuell öffnen oder Kopierfehler: ' + (copyErr instanceof Error ? copyErr.message : '');
+      const payload = { items: lines, exclude: [] };
+      const result = await api.post<{ status: string; added: string[]; failed?: string[]; duplicates_merged?: string[] }>(
+        '/shopping-list/add',
+        payload
+      );
+      const addedCount = result.added?.length ?? selectedItems.length;
+      if (result.status === 'partial' && result.failed && result.failed.length > 0) {
+        shoppingError = SHOPPING_PARTIAL + ' (' + result.failed.join(', ') + ')';
+      } else {
+        shoppingSuccess = `${addedCount} Zut${addedCount === 1 ? 'at' : 'aten'} hinzugefügt`;
       }
-      try {
-        window.open('https://web.getbring.com', '_blank', 'noopener');
-      } catch (openErr) {
-        shoppingError = 'Bring konnte nicht geöffnet werden: ' + (openErr instanceof Error ? openErr.message : '');
-      }
-      if (!shoppingError) {
-        showToast('Zutaten kopiert – in Bring einfügen.', 'success');
+      showToast(shoppingSuccess || 'Zur Einkaufsliste hinzugefügt.', 'success');
+      // Erfolgs-Feedback bleibt sichtbar
+      setTimeout(() => {
         showShopping = false;
-      }
+        shoppingSuccess = '';
+        selectedIngredients = new Set();
+      }, 2500);
     } catch (e) {
-      shoppingError = 'Unexpected error: ' + (e instanceof Error ? e.message : String(e));
-      showToast(shoppingError, 'error');
+      const { message, retryable } = translateShoppingError(e);
+      shoppingError = message;
+      showToast(message, retryable ? 'info' : 'error');
     } finally {
       addingShopping = false;
     }
@@ -306,8 +373,8 @@ import { showToast } from '#lib/toast.svelte';
         <button class="btn" class:active={recipe.is_saved} type="button" onclick={toggleSaved}>
           {#if recipe.is_saved}<Check size={17} /> Gespeichert{:else}<Plus size={17} /> Merken{/if}
         </button>
-        <button class="btn" type="button" onclick={() => (showShopping = true)}>
-          <ShoppingCart size={17} /> Zur Einkaufsliste
+        <button class="btn" type="button" onclick={() => (showShopping = true)} aria-label="Zur Einkaufsliste hinzufügen">
+          <ListPlus size={17} /> Zur Einkaufsliste
         </button>
       </div>
     </div>
@@ -442,23 +509,61 @@ import { showToast } from '#lib/toast.svelte';
   </div>
 
   {#if showShopping}
-    <div class="modal-backdrop" role="dialog" aria-modal="true">
-      <div class="modal surface">
-        <h2>Zur Einkaufsliste hinzufügen?</h2>
-        <p class="muted">Folgende Zutaten werden übernommen:</p>
-        <ul class="modal-list">
-          {#each allIngredients as item}
-            <li>{formatAmount(item.amount, factor)}{item.unit ? ` ${item.unit}` : ''} {item.name}</li>
-          {/each}
-        </ul>
-        {#if shoppingError}<p class="modal-error shopping-error">{shoppingError}</p>{/if}
-        <div class="modal-actions">
+    <div class="modal-backdrop bottom-sheet" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showShopping = false; }}>
+      <div class="modal surface bottom-sheet-panel">
+        <div class="sheet-head">
+          <h2>Zur Einkaufsliste hinzufügen</h2>
+          <button class="btn btn-icon" type="button" onclick={() => (showShopping = false)} aria-label="Schließen">
+            <X size={18} />
+          </button>
+        </div>
+        <p class="muted" style="font-size:0.82rem">Wähle Zutaten für {formatAmount(1, factor)} Portionen (Basis {baseServings}).</p>
+
+        <button class="check-all no-print" type="button" onclick={toggleAllSelection} style="margin-top:0.3rem;display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.5rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;">
+          {#if allIngredients.every(i => selectedIngredients.has(i.key))}<Check size={14} /> Alle abwählen{:else}Alle auswählen{/if}
+        </button>
+
+        {#if allIngredients.length === 0}
+          <p class="muted empty">Für dieses Rezept wurden keine Zutaten gefunden.</p>
+        {:else}
+          <ul class="modal-list" style="max-height:45vh;overflow:auto;margin-top:0.4rem;">
+            {#each allIngredients as item}
+              <li style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--border);">
+                <label style="display:flex;align-items:center;gap:0.45rem;cursor:pointer;flex:1;font-size:0.85rem;min-width:0;">
+                  <input
+                    type="checkbox"
+                    checked={selectedIngredients.has(item.key)}
+                    onchange={() => toggleIngredientSelection(item.key)}
+                    style="width:16px;height:16px;accent-color:var(--accent);flex:none;"
+                  />
+                  <span class="amount" style="font-weight:700;color:var(--accent);white-space:nowrap;">{formatAmount(item.amount, factor)}{item.unit ? ` ${item.unit}` : ''}</span>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{item.name}{#if deselectedHistory[item.key] && deselectedHistory[item.key] >= 2}<span style="font-size:0.7rem;color:var(--muted);margin-left:0.3rem;">· Vorratsartikel</span>{/if}</span>
+                </label>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
+        {#if shoppingError}
+          <div class="modal-error" role="alert">{shoppingError}</div>
+        {/if}
+        {#if shoppingSuccess}
+          <div style="font-size:0.82rem;color:var(--success);margin-top:0.2rem;">{shoppingSuccess}</div>
+        {/if}
+
+        <div class="modal-actions" style="margin-top:0.8rem;">
           <button class="btn" type="button" onclick={() => (showShopping = false)} disabled={addingShopping}>
             <X size={16} /> Abbrechen
           </button>
-          <button class="btn btn-primary" type="button" onclick={addToShoppingList} disabled={addingShopping}>
-            {#if addingShopping}<LoaderCircle class="spin" size={16} />{:else}<Check size={16} />{/if}
-            Ja, hinzufügen
+          <button
+            class="btn btn-primary"
+            type="button"
+            onclick={confirmAddToShoppingList}
+            disabled={addingShopping || selectedIngredients.size === 0}
+            aria-describedby="shopping-count"
+          >
+            {#if addingShopping}<LoaderCircle class="spin" size={16} />{:else}<ListPlus size={16} />{/if}
+            <span id="shopping-count">{selectedCount()} {selectedCount() === 1 ? 'Zutat' : 'Zutaten'} hinzufügen</span>
           </button>
         </div>
       </div>
@@ -1005,6 +1110,33 @@ import { showToast } from '#lib/toast.svelte';
     gap: 0.5rem;
     margin-top: 0.4rem;
   }
+
+  .bottom-sheet {
+    align-items: flex-end;
+    padding: 0;
+    background: rgb(0 0 0 / 0.55);
+  }
+  .bottom-sheet-panel {
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    border-radius: 24px 24px 0 0;
+    margin: 0 auto;
+    padding: 1rem 1.1rem 1.2rem;
+    animation: slide-up 200ms ease;
+  }
+  @keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0.6; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.2rem;
+  }
+  .sheet-head h2 { font-size: 1.15rem; margin: 0; }
 
   @media print {
     .ingredients {

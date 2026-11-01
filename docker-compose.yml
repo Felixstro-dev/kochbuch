@@ -19,7 +19,7 @@ services:
       EMBED_PUBLIC: "${EMBED_PUBLIC:-true}"
       CORS_ORIGINS: "${CORS_ORIGINS:-*}"
       # Home Assistant darf die Seite als iframe einbetten
-      FRAME_ANCESTORS: "${FRAME_ANCESTORS:-'self' http://homeassistant.local:8123 http://192.168.3.146:8123 https://*.duckdns.org}"
+      FRAME_ANCESTORS: "${FRAME_ANCESTORS:-'self'}"
       TZ: "${TZ:-Europe/Berlin}"
       AUTO_MIGRATE: "${AUTO_MIGRATE:-true}"
     volumes:

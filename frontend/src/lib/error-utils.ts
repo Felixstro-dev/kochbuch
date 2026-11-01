@@ -30,6 +30,13 @@ export const BRING_NETWORK_ERROR = 'Bring-Dienst nicht erreichbar. Funktioniert 
 export const BRING_AUTH_ERROR = 'Bring-Zugangsdaten nicht konfiguriert. Bitte Einstellungen prüfen.'
 export const BRING_ITEM_ERROR = 'Artikel konnte nicht zur Einkaufsliste hinzugefügt werden. Bitte Feldinhalte prüfen.'
 
+/** Einkaufsliste-Fehler (zentral) */
+export const SHOPPING_UNREACHABLE = 'Die Einkaufsliste ist gerade nicht erreichbar. Erneut versuchen?'
+export const SHOPPING_EMPTY = 'Keine Zutaten ausgewählt. Bitte mindestens eine Zutat anhaken.'
+export const SHOPPING_BAD_DATA = 'Rezept hat keine gültigen Zutaten. Bitte überprüfen Sie das Rezept.'
+export const SHOPPING_PARTIAL = 'Einige Zutaten konnten nicht hinzugefügt werden. Nur diese erneut versuchen?'
+export const SHOPPING_DUPLICATE = 'Einige Zutaten waren bereits auf der Liste und wurden zusammengeführt.'
+
 /** Globale Fallback-Funktion für unbekannte Fehler */
 export function mapError(error: unknown): string {
   if (error instanceof Error) {
@@ -57,4 +64,34 @@ export function mapError(error: unknown): string {
     return error.length > 50 ? SERVER_ERROR : error
   }
   return SERVER_ERROR
+}
+
+/** Zentrale Fehler-Übersetzung für Einkaufsliste-Aktionen */
+export function translateShoppingError(err: unknown): { message: string; retryable: boolean; partial?: string[] } {
+  if (err instanceof Error) {
+    const m = err.message.toLowerCase();
+    if (m.includes('timeout') || m.includes('network') || m.includes('connection') || m.includes('unreachable') || m.includes('offline')) {
+      return { message: SHOPPING_UNREACHABLE, retryable: true };
+    }
+    if (m.includes('empty') || m.includes('none selected')) {
+      return { message: SHOPPING_EMPTY, retryable: false };
+    }
+    if (m.includes('bad data') || m.includes('no ingredients')) {
+      return { message: SHOPPING_BAD_DATA, retryable: false };
+    }
+    if (m.includes('partial') || m.includes('some')) {
+      return { message: SHOPPING_PARTIAL, retryable: true, partial: [] };
+    }
+    if (m.includes('duplicate') || m.includes('already')) {
+      return { message: SHOPPING_DUPLICATE, retryable: false };
+    }
+    // Nur Log, nie ins UI: technische Details für Entwickler.
+    console.error('[ShoppingError] Uncaught:', err);
+    return { message: SERVER_ERROR, retryable: true };
+  }
+  if (typeof err === 'string') {
+    return translateShoppingError(new Error(err));
+  }
+  console.error('[ShoppingError] Unknown:', err);
+  return { message: SERVER_ERROR, retryable: true };
 }
