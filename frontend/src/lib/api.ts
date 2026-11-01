@@ -66,7 +66,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
         : typeof body === 'string' && body
           ? body
           : `Anfrage fehlgeschlagen (${response.status}).`;
-    showToast(detail, 'error');
     throw new ApiError(response.status, detail);
   }
   return body as T;
