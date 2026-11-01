@@ -100,6 +100,11 @@ class UpdateChecker:
             if latest and own:
                 self.update_available = latest != own
                 self.last_error = None
+                from app.core.logging import C
+                if self.update_available:
+                    logger.info(f"{C['yellow']}⚠ NEUES UPDATE VERFÜGBAR{C['reset']} (latest={latest[:19]}... own={own[:19]}...)")
+                else:
+                    logger.info(f"{C['green']}✓ Keine neuen Updates{C['reset']} (Digest: {latest[:19]}...)")
             else:
                 self.update_available = False
                 self.last_error = "Vergleich nicht möglich (Tag nicht gefunden)."

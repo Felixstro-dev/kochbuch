@@ -33,11 +33,14 @@ logger = logging.getLogger(__name__)
 def _run_migrations(database_url: str) -> None:
     from alembic import command
     from alembic.config import Config
-
+    from app.core.logging import progress_bar, C
+    logger = logging.getLogger(__name__)
+    logger.info(f"{C['cyan']}⚡ Migration startet...{C['reset']}")
     cfg = Config(str(BACKEND_DIR / "alembic.ini"))
     cfg.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
     cfg.set_main_option("sqlalchemy.url", database_url)
     command.upgrade(cfg, "head")
+    logger.info(f"{C['green']}✓ Migration abgeschlossen{C['reset']}")
 
 
 def _bootstrap(settings: Settings, session_factory) -> None:
@@ -66,31 +69,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        from app.core.logging import C, progress_bar
+        logger.info(f"{C['bold']}▶ Startup-Phase 1/4: Datenbank & Migration{C['reset']}")
         if settings.testing:
             Base.metadata.create_all(bind=engine)
         elif settings.auto_migrate:
             _run_migrations(settings.resolved_database_url)
         else:
             Base.metadata.create_all(bind=engine)
+
+        logger.info(f"{C['bold']}▶ Startup-Phase 2/4: Bootstrap & Services{C['reset']}")
         _bootstrap(settings, session_factory)
 
         registry = ProviderRegistry(settings, session_factory)
         with session_factory() as db:
             from app.services import settings as settings_service
-
             registry.fetcher.apply_values(settings_service.get_values(db))
+        logger.info(f"{C['bold']}▶ Startup-Phase 3/4: Registry & Services{C['reset']}")
         app.state.registry = registry
         app.state.fetch_pipeline = registry.fetcher
         app.state.image_service = ImageService(settings, registry.fetcher)
         app.state.search_service = SearchService(registry, session_factory, settings)
         app.state.recipe_service = RecipeService(registry, session_factory, settings)
 
+        from app.core.logging import C
         logger.info(
-            "%s %s gestartet (%s)", settings.app_name, __version__, settings.environment
+            f"{C['bold']}%s %s gestartet (%s){C['reset']}", settings.app_name, __version__, settings.environment
         )
 
+        logger.info(f"{C['bold']}▶ Startup-Phase 4/4: Update-Check {C['cyan']}aktiviert{C['reset']} {'✓' if settings.update_check_enabled else '✗'}{C['reset']}")
         update_task: asyncio.Task | None = None
         if settings.update_check_enabled and not settings.testing:
+            from app.core.logging import C
+            logger.info(f"{C['cyan']}▶ Update-Check gestartet (Interval: {settings.update_check_interval}s){C['reset']}")
             checker = UpdateChecker(
                 settings.update_image, settings.git_sha, settings.update_check_interval
             )
