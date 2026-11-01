@@ -495,6 +495,22 @@ import { showToast } from '#lib/toast.svelte';
         {#if updateMessage}<p class="muted">{updateMessage}</p>{/if}
       </div>
     </section>
+
+    <section class="card surface">
+      <header class="card-head">
+        <span class="icon"><Trash2 size={18} /></span>
+        <div>
+          <h2>Backup</h2>
+          <p class="muted">Datenbank-Info und Download für sicheres Kopieren.</p>
+        </div>
+      </header>
+      <div class="fields">
+        <button class="btn" type="button" onclick={() => window.open('/api/v1/export/backup', '_blank')}>
+          <Trash2 size={15} /> Backup-Info anzeigen
+        </button>
+        <p class="muted" style="font-size:0.78rem;">Pfad: <code>/app/data/kochbuch.db</code> im Docker-Volume.</p>
+      </div>
+    </section>
   </div>
 
   {#if isAdmin}
