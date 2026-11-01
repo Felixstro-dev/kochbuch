@@ -49,6 +49,8 @@
   let message = $state('');
   let error = $state('');
   let testing = $state<string | null>(null);
+  let checkingUpdate = $state(false);
+  let updateMessage = $state('');
   let testResults = $state<Record<string, FetchTestResult>>({});
 
   const accents = ['#e6a15c', '#d97757', '#7fb685', '#6f9fce', '#b48ead', '#d8b45a'];
@@ -182,6 +184,21 @@
     } finally {
       testing = null;
     }
+  async function checkForUpdates() {
+    if (checkingUpdate || !isAdmin) return;
+    checkingUpdate = true;
+    updateMessage = '';
+    try {
+      const result = await api.post<{ available?: boolean; dokploy_url?: string }>('/system/update-check');
+      updateMessage = result?.available
+        ? 'Update verfügbar – im Dokploy bereitstellen.'
+        : 'Kein Update verfügbar. Du bist auf dem neuesten Stand.';
+    } catch (cause) {
+      updateMessage = cause instanceof ApiError ? cause.message : 'Update-Prüfung fehlgeschlagen.';
+    } finally {
+      checkingUpdate = false;
+    }
+  }
   }
 </script>
 
@@ -455,6 +472,22 @@
         {:else}
           <p class="muted empty">Statistik ist nur für Administratoren sichtbar.</p>
         {/if}
+      </div>
+    </section>
+    <section class="card surface">
+      <header class="card-head">
+        <span class="icon"><RefreshCw size={18} /></span>
+        <div>
+          <h2>Updates</h2>
+          <p class="muted">Prüft, ob eine neuere Version verfügbar ist.</p>
+        </div>
+      </header>
+      <div class="fields">
+        <button class="btn btn-ghost" type="button" onclick={checkForUpdates} disabled={!isAdmin || checkingUpdate}>
+          {#if checkingUpdate}<LoaderCircle class="spin" size={15} />{:else}<RefreshCw size={15} />{/if}
+          Auf Updates prüfen
+        </button>
+        {#if updateMessage}<p class="muted">{updateMessage}</p>{/if}
       </div>
     </section>
   </div>

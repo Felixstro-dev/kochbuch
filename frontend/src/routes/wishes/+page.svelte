@@ -299,7 +299,14 @@
   }
 
   .tick-done {
-    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    background: color-mix(in srgb, var(--success) 22%, transparent);
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  .wish.done-item {
+    border-color: var(--success);
+    background: color-mix(in srgb, var(--success) 8%, var(--bg-elevated));
   }
 
   .done-item .wish-text {
