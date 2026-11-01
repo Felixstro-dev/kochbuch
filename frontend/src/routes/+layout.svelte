@@ -18,6 +18,7 @@
   import { applyTheme, initTheme } from '#lib/theme';
   import ThemeToggle from '#lib/components/ThemeToggle.svelte';
   import UpdateToast from '#lib/components/UpdateToast.svelte';
+  import ToastContainer from '#lib/components/ToastContainer.svelte';
   import type { AuthStatus } from '#lib/types';
 
   let { data, children }: { data: { status: AuthStatus; embed: boolean; path: string }; children: Snippet } = $props();
@@ -207,6 +208,7 @@
 
   {#if !embed && !isAuthPage}
     <UpdateToast />
+    <ToastContainer />
   {/if}
 {/if}
 

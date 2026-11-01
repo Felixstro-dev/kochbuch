@@ -8,6 +8,7 @@
     Undo2
   } from 'lucide-svelte';
   import { api } from '#lib/api';
+import { showToast } from '#lib/toast.svelte';
   import type { Wish } from '#lib/types';
 
   let { data }: { data: { wishes: Wish[]; error: string | null } } = $props();
@@ -35,7 +36,9 @@
       text = '';
       note = '';
     } catch (cause) {
-      notice = cause instanceof Error ? cause.message : 'Der Wunsch konnte nicht gespeichert werden.';
+      const msg = cause instanceof Error ? cause.message : 'Der Wunsch konnte nicht gespeichert werden.';
+      notice = msg;
+      showToast(msg, 'error');
     } finally {
       busy = false;
     }
@@ -54,7 +57,9 @@
       wishes = wishes.map((item) => (item.id === wish.id ? updated : item));
     } catch (cause) {
       wishes = wishes.map((item) => (item.id === wish.id ? wish : item));
-      notice = cause instanceof Error ? cause.message : 'Der Status konnte nicht geändert werden.';
+      const msg = cause instanceof Error ? cause.message : 'Der Status konnte nicht geändert werden.';
+      notice = msg;
+      showToast(msg, 'error');
     }
   }
 
@@ -63,7 +68,9 @@
       await api.delete(`/wishes/${encodeURIComponent(wish.id)}`);
       wishes = wishes.filter((item) => item.id !== wish.id);
     } catch (cause) {
-      notice = cause instanceof Error ? cause.message : 'Der Wunsch konnte nicht gelöscht werden.';
+      const msg = cause instanceof Error ? cause.message : 'Der Wunsch konnte nicht gelöscht werden.';
+      notice = msg;
+      showToast(msg, 'error');
     }
   }
 </script>

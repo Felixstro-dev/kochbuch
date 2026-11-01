@@ -3,6 +3,7 @@
   import {
     ArrowLeft,
     Check,
+    LoaderCircle,
     ChefHat,
     Clock,
     ExternalLink,
@@ -14,10 +15,13 @@
     Plus,
     Printer,
     Share2,
+    ShoppingCart,
     Users,
+    X,
     Utensils
   } from 'lucide-svelte';
   import { api } from '#lib/api';
+import { showToast } from '#lib/toast.svelte';
   import {
     amountFactor,
     difficultyLabel,
@@ -41,6 +45,8 @@
   let checked = $state<Set<string>>(new Set());
   let copied = $state(false);
   let busy = $state(false);
+  let showShopping = $state(false);
+  let addingShopping = $state(false);
   let heroPopping = $state(false);
 
   const baseServings = $derived(recipe.base_servings ?? 4);
@@ -157,6 +163,31 @@
     window.print();
   }
 
+  async function addToShoppingList() {
+    if (addingShopping) return;
+    addingShopping = true;
+    try {
+      const lines = allIngredients.map((item) => {
+        const amount = formatAmount(item.amount, factor);
+        const unit = item.unit ? ` ${item.unit}` : '';
+        return `${amount}${unit} ${item.name}`.trim();
+      });
+      const text = `${recipe.title}\n` + lines.join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // Clipboard may be blocked.
+      }
+      window.open('https://web.getbring.com', '_blank', 'noopener');
+      showToast('Zutaten kopiert – in Bring einfügen.', 'success');
+      showShopping = false;
+    } catch {
+      showToast('Einkaufsliste konnte nicht geöffnet werden.', 'error');
+    } finally {
+      addingShopping = false;
+    }
+  }
+
   function startCooking() {
     goto(`/recipe/${encodeURIComponent(recipe.cache_key)}/cook`);
   }
@@ -265,6 +296,9 @@
         </button>
         <button class="btn" class:active={recipe.is_saved} type="button" onclick={toggleSaved}>
           {#if recipe.is_saved}<Check size={17} /> Gespeichert{:else}<Plus size={17} /> Merken{/if}
+        </button>
+        <button class="btn" type="button" onclick={() => (showShopping = true)}>
+          <ShoppingCart size={17} /> Zur Einkaufsliste
         </button>
       </div>
     </div>
@@ -397,6 +431,30 @@
       {/if}
     </div>
   </div>
+
+  {#if showShopping}
+    <div class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal surface">
+        <h2>Zur Einkaufsliste hinzufügen?</h2>
+        <p class="muted">Folgende Zutaten werden übernommen:</p>
+        <ul class="modal-list">
+          {#each allIngredients as item}
+            <li>{formatAmount(item.amount, factor)}{item.unit ? ` ${item.unit}` : ''} {item.name}</li>
+          {/each}
+        </ul>
+        <div class="modal-actions">
+          <button class="btn" type="button" onclick={() => (showShopping = false)} disabled={addingShopping}>
+            <X size={16} /> Abbrechen
+          </button>
+          <button class="btn btn-primary" type="button" onclick={addToShoppingList} disabled={addingShopping}>
+            {#if addingShopping}<LoaderCircle class="spin" size={16} />{:else}<Check size={16} />{/if}
+            Ja, hinzufügen
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
 </div>
 
 <style>
@@ -888,6 +946,45 @@
     .hero-media {
       aspect-ratio: 16 / 10;
     }
+  }
+
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 0.5);
+    display: grid;
+    place-items: center;
+    z-index: 50;
+    padding: 1rem;
+  }
+  .modal {
+    width: min(480px, 95vw);
+    max-height: 80vh;
+    overflow: auto;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .modal h2 { font-size: 1.15rem; }
+  .modal-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: var(--text-soft);
+    max-height: 40vh;
+    overflow: auto;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
   }
 
   @media print {

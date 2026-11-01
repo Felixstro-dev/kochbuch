@@ -14,6 +14,7 @@
     Trash2
   } from 'lucide-svelte';
   import { api, ApiError } from '#lib/api';
+import { showToast } from '#lib/toast.svelte';
   import type { AppSettings, FetchStatus, FetchTestResult } from '#lib/types';
 
   let { data }: {
@@ -184,21 +185,25 @@
     } finally {
       testing = null;
     }
+  }
   async function checkForUpdates() {
     if (checkingUpdate || !isAdmin) return;
     checkingUpdate = true;
     updateMessage = '';
     try {
       const result = await api.post<{ available?: boolean; dokploy_url?: string }>('/system/update-check');
-      updateMessage = result?.available
+      const msg = result?.available
         ? 'Update verfügbar – im Dokploy bereitstellen.'
         : 'Kein Update verfügbar. Du bist auf dem neuesten Stand.';
+      updateMessage = msg;
+      showToast(msg, result?.available ? 'success' : 'info');
     } catch (cause) {
-      updateMessage = cause instanceof ApiError ? cause.message : 'Update-Prüfung fehlgeschlagen.';
+      const errMsg = cause instanceof ApiError ? cause.message : 'Update-Prüfung fehlgeschlagen.';
+      updateMessage = errMsg;
+      showToast(errMsg, 'error');
     } finally {
       checkingUpdate = false;
     }
-  }
   }
 </script>
 
