@@ -47,6 +47,7 @@ import { showToast } from '#lib/toast.svelte';
   let busy = $state(false);
   let showShopping = $state(false);
   let addingShopping = $state(false);
+  let shoppingError = $state('');
   let heroPopping = $state(false);
 
   const baseServings = $derived(recipe.base_servings ?? 4);
@@ -163,26 +164,34 @@ import { showToast } from '#lib/toast.svelte';
     window.print();
   }
 
-  async function addToShoppingList() {
+    async function addToShoppingList() {
     if (addingShopping) return;
     addingShopping = true;
+    shoppingError = '';
     try {
       const lines = allIngredients.map((item) => {
         const amount = formatAmount(item.amount, factor);
         const unit = item.unit ? ` ${item.unit}` : '';
         return `${amount}${unit} ${item.name}`.trim();
       });
-      const text = `${recipe.title}\n` + lines.join('\n');
+      const newLine = String.fromCharCode(10); const text = recipe.title + newLine + lines.join(newLine);
       try {
         await navigator.clipboard.writeText(text);
-      } catch {
-        // Clipboard may be blocked.
+      } catch (copyErr) {
+        shoppingError = 'Zwischenablage blocked – Bring manuell öffnen oder Kopierfehler: ' + (copyErr instanceof Error ? copyErr.message : '');
       }
-      window.open('https://web.getbring.com', '_blank', 'noopener');
-      showToast('Zutaten kopiert – in Bring einfügen.', 'success');
-      showShopping = false;
-    } catch {
-      showToast('Einkaufsliste konnte nicht geöffnet werden.', 'error');
+      try {
+        window.open('https://web.getbring.com', '_blank', 'noopener');
+      } catch (openErr) {
+        shoppingError = 'Bring konnte nicht geöffnet werden: ' + (openErr instanceof Error ? openErr.message : '');
+      }
+      if (!shoppingError) {
+        showToast('Zutaten kopiert – in Bring einfügen.', 'success');
+        showShopping = false;
+      }
+    } catch (e) {
+      shoppingError = 'Unexpected error: ' + (e instanceof Error ? e.message : String(e));
+      showToast(shoppingError, 'error');
     } finally {
       addingShopping = false;
     }
@@ -442,6 +451,7 @@ import { showToast } from '#lib/toast.svelte';
             <li>{formatAmount(item.amount, factor)}{item.unit ? ` ${item.unit}` : ''} {item.name}</li>
           {/each}
         </ul>
+        {#if shoppingError}<p class="modal-error shopping-error">{shoppingError}</p>{/if}
         <div class="modal-actions">
           <button class="btn" type="button" onclick={() => (showShopping = false)} disabled={addingShopping}>
             <X size={16} /> Abbrechen
@@ -933,6 +943,15 @@ import { showToast } from '#lib/toast.svelte';
     animation: heart-pop 380ms ease;
   }
 
+  .modal-error {
+    color: var(--danger);
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    min-height: 16px;
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+  }
   @media (max-width: 860px) {
     .columns {
       grid-template-columns: 1fr;
