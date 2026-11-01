@@ -14,6 +14,34 @@ from app.schemas.settings import (
 router = APIRouter(prefix="/system", tags=["system"])
 
 
+def _checker(request: Request):
+    checker = getattr(request.app.state, "update_checker", None)
+    if checker is None:
+        # Testing/Deaktiviert: Endpunkt antwortet trotzdem mit „aus".
+        from app.services.update_check import UpdateChecker
+
+        checker = UpdateChecker(image="", git_sha="unknown", interval_seconds=3600)
+    return checker
+
+
+@router.get("/update-status")
+def update_status(
+    request: Request,
+    _: Principal = Depends(require_admin),
+) -> dict[str, object]:
+    settings = request.app.state.settings
+    return _checker(request).state(dokploy_url=settings.dokploy_url)
+
+
+@router.post("/update-check")
+async def trigger_update_check(
+    request: Request,
+    _: Principal = Depends(require_admin),
+) -> dict[str, object]:
+    settings = request.app.state.settings
+    return await _checker(request).check() | {"dokploy_url": settings.dokploy_url}
+
+
 @router.get("/fetch-status", response_model=FetchStatusOut)
 def fetch_status(
     request: Request,

@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     image_max_bytes: int = 20 * 1024 * 1024
     allow_private_urls: bool = False
 
+    # Update-Check gegen GHCR (vom CI als GIT_SHA ins Image gebrannt)
+    git_sha: str = "unknown"
+    update_check_enabled: bool = True
+    update_check_interval: int = 3600
+    update_image: str = "ghcr.io/felixstro-dev/kochbuch"
+    dokploy_url: str = ""
+
     # Feature defaults (overridable via settings table later)
     default_theme: str = "dark"
     accent_color: str = "#e6a15c"

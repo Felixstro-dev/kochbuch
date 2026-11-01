@@ -185,6 +185,18 @@ export interface ApiKeyCreated extends ApiKey {
   secret: string;
 }
 
+export interface UpdateStatus {
+  enabled: boolean;
+  current_sha: string | null;
+  current_short: string | null;
+  update_available: boolean;
+  latest_digest: string | null;
+  checked_at: string | null;
+  last_error: string | null;
+  interval_seconds: number;
+  dokploy_url: string;
+}
+
 export interface Wish {
   id: string;
   text: string;

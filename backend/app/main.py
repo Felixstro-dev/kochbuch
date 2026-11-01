@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -23,6 +24,7 @@ from app.services.auth import bootstrap_admin, cleanup_expired_sessions
 from app.services.images import ImageService
 from app.services.recipes import RecipeService
 from app.services.search import SearchService
+from app.services.update_check import UpdateChecker, start_update_loop
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 logger = logging.getLogger(__name__)
@@ -86,7 +88,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         logger.info(
             "%s %s gestartet (%s)", settings.app_name, __version__, settings.environment
         )
+
+        update_task: asyncio.Task | None = None
+        if settings.update_check_enabled and not settings.testing:
+            checker = UpdateChecker(
+                settings.update_image, settings.git_sha, settings.update_check_interval
+            )
+            app.state.update_checker = checker
+            update_task = start_update_loop(checker)
+
         yield
+        if update_task:
+            update_task.cancel()
         await registry.close()
         engine.dispose()
 

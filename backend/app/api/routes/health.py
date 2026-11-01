@@ -17,6 +17,7 @@ def health(request: Request, db: Session = Depends(get_db)) -> dict[str, object]
     return {
         "status": "ok",
         "version": __version__,
+        "git_sha": settings.git_sha if settings.git_sha != "unknown" else None,
         "app": settings.app_name,
         "environment": settings.environment,
     }

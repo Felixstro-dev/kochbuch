@@ -62,7 +62,28 @@ aspect_ratio: "100%"
 | `CORS_ORIGINS` | `*` | Komma-getrennte erlaubte Originen |
 | `FRAME_ANCESTORS` | `'self'` | Wer die Seite einbetten darf (iframe) |
 | `AUTO_MIGRATE` | `true` | Alembic-Migrationen beim Start ausführen |
+| `DOKPLOY_URL` | leer | URL deines Dokploy-Dashboards – wenn gesetzt, zeigt der Update-Toast einen „Zu Dokploy"-Button |
+| `UPDATE_CHECK_ENABLED` | `true` | Stündlicher Update-Check gegen GHCR (nur mit eingebranntem `GIT_SHA`, also im Docker-Image) |
 | `TZ` | `Europe/Berlin` | Zeitzone |
+
+`GIT_SHA` wird vom CI automatisch ins Image gebrannt – nicht manuell setzen.
+
+## Updates
+
+Der Prüf-Ablauf:
+
+1. Der CI baut bei jedem Push auf `main` ein neues Image und vergleichsweise
+   das Tag `sha-<kurz>`; `latest` zeigt auf den neuesten Commit.
+2. Das laufende Backend vergleicht stündlich den Digest von `latest` mit dem
+   Digest seines eigenen `sha-`Tags (anonym, kein Login nötig).
+3. Gibt es ein neues Bild, erscheint in der Web-UI ein Toast mit
+   „Zu Dokploy"-Button. Der öffnet dein Dokploy-Dashboard, dort den
+   **Update-Button** der App – Dokploy zieht das neue Image und erzeugt den
+   Container neu (Volume und Daten bleiben erhalten).
+
+Manuell prüfen geht auch ohne Wartezeit: `POST /api/v1/system/update-check`
+(als Admin), oder in den Entwicklertools das Layout neu laden – der Check
+läuft beim Start des Backends einmal sofort.
 
 ## Daten migrieren (bestehende SQLite-DB)
 

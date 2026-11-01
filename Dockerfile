@@ -26,6 +26,10 @@ COPY backend/ ./
 
 # --- 3) Runtime ---
 FROM python:3.13-slim AS runtime
+# Git-SHA des Builds (vom CI gesetzt) – vom Update-Checker zum Abgleich
+# mit dem neuesten GHCR-Image verwendet.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/backend/.venv/bin:$PATH" \

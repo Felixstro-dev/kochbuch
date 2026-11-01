@@ -17,6 +17,7 @@
   import { api } from '#lib/api';
   import { applyTheme, initTheme } from '#lib/theme';
   import ThemeToggle from '#lib/components/ThemeToggle.svelte';
+  import UpdateToast from '#lib/components/UpdateToast.svelte';
   import type { AuthStatus } from '#lib/types';
 
   let { data, children }: { data: { status: AuthStatus; embed: boolean; path: string }; children: Snippet } = $props();
@@ -203,6 +204,10 @@
       </nav>
     </div>
   </div>
+
+  {#if !embed && !isAuthPage}
+    <UpdateToast />
+  {/if}
 {/if}
 
 <style>
