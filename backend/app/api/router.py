@@ -6,6 +6,7 @@ from app.api.routes import (
     api_keys,
     audit,
     auth,
+    bring,
     embed_tokens,
     health,
     recipes,
