@@ -19,7 +19,8 @@ services:
       EMBED_PUBLIC: "${EMBED_PUBLIC:-true}"
       CORS_ORIGINS: "${CORS_ORIGINS:-*}"
       # Home Assistant darf die Seite als iframe einbetten
-      FRAME_ANCESTORS: "${FRAME_ANCESTORS:-'self'}"
+      # frame-ancestors * → beliebige Ursprünge erlaubt.
+      FRAME_ANCESTORS: "${FRAME_ANCESTORS:-*}"
       TZ: "${TZ:-Europe/Berlin}"
       AUTO_MIGRATE: "${AUTO_MIGRATE:-true}"
     volumes:

@@ -41,6 +41,10 @@ class Settings(BaseSettings):
 
     # Proxy / integrations
     cors_origins: str = ""
+    # Allowlisting für iFrame-Einbettung (z. B. Home Assistant Dashboard).
+    # Gewünschte Ursprünge über Umgebungsvariable FRAME_ANCESTORS setzen,
+    # getrennt durch Leerzeichen, z. B.:
+    #   FRAME_ANCESTORS="'self' http://homeassistant.local:8123 http://192.168.1.100:8123 https://ha.meinedomain.de"
     frame_ancestors: str = "'self'"
     embed_public: bool = True
 
